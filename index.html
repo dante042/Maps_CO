@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Refugee Flow Density (Robinson)</title>
+
+  <style>
+    :root {
+      --bg-a: #020617;
+      --bg-b: #0f172a;
+      --ink: #e2e8f0;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1000px 650px at 10% 15%, rgba(59, 130, 246, .22) 0%, transparent 45%),
+        radial-gradient(1000px 650px at 85% 85%, rgba(14, 165, 233, .2) 0%, transparent 48%),
+        linear-gradient(145deg, var(--bg-a), var(--bg-b));
+    }
+
+    #chart {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: radial-gradient(120% 100% at 50% 45%, #0b1a30 0%, #060f1f 68%, #050914 100%);
+    }
+
+    .origin-label {
+      fill: #f8fafc;
+      font-size: 11px;
+      font-weight: 700;
+      paint-order: stroke;
+      stroke: rgba(2, 6, 23, 0.92);
+      stroke-width: 3px;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .country {
+      fill: rgba(8, 28, 58, 0.68);
+      stroke: rgba(255, 255, 255, 0.85);
+      stroke-width: 0.75;
+    }
+
+    .origin-country {
+      fill: rgba(255, 255, 255, 0.92);
+      stroke: rgba(255, 255, 255, 0.98);
+      stroke-width: 1;
+    }
+
+    .coastline-glow {
+      fill: none;
+      stroke: rgba(191, 239, 255, 0.55);
+      stroke-width: 8;
+      filter: url(#coastGlow);
+      pointer-events: none;
+    }
+
+    .coastline-edge {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.82);
+      stroke-width: 1.25;
+      pointer-events: none;
+    }
+
+    .guide {
+      fill: none;
+      stroke-linecap: round;
+      opacity: 0.23;
+      stroke-width: 1.1;
+    }
+
+    .arrow {
+      stroke-width: 1.2;
+      fill: none;
+      opacity: 0.9;
+    }
+
+    .origin-node {
+      stroke: #e2e8f0;
+      stroke-width: 1;
+    }
+
+    .dest-node {
+      fill: #cbd5e1;
+      stroke: #e2e8f0;
+      stroke-width: 1;
+    }
+
+    .error {
+      fill: #fecaca;
+      font-size: 16px;
+      font-weight: 600;
+      text-anchor: middle;
+    }
+  </style>
+</head>
+<body>
+  <svg id="chart" role="img" aria-label="Robinson-projection world map with animated refugee-flow particles"></svg>
+
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-geo-projection@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+
+  <script>
+    const origins = [
+      { name: 'Ukraine', color: '#60a5fa', lat: 49.0, lon: 31.3 },
+      { name: 'Afghanistan', color: '#f59e0b', lat: 33.9, lon: 67.7 },
+      { name: 'Venezuela', color: '#34d399', lat: 7.0, lon: -66.0 },
+      { name: 'Syria', color: '#a78bfa', lat: 34.8, lon: 38.9 },
+      { name: 'Sudan', color: '#f87171', lat: 15.6, lon: 30.5 },
+    ];
+
+    const flows = [
+      { from: 'Ukraine', to: 'Russia', value: 1.20, lat: 55.7, lon: 37.6 },
+      { from: 'Ukraine', to: 'Germany', value: 1.10, lat: 52.5, lon: 13.4 },
+      { from: 'Ukraine', to: 'Poland', value: 0.95, lat: 52.2, lon: 21.0 },
+      { from: 'Ukraine', to: 'Czechia', value: 0.38, lat: 50.1, lon: 14.4 },
+      { from: 'Ukraine', to: 'United Kingdom', value: 0.25, lat: 51.5, lon: -0.1 },
+      { from: 'Ukraine', to: 'Spain', value: 0.19, lat: 40.4, lon: -3.7 },
+      { from: 'Ukraine', to: 'Italy', value: 0.18, lat: 41.9, lon: 12.5 },
+      { from: 'Ukraine', to: 'Romania', value: 0.16, lat: 44.4, lon: 26.1 },
+      { from: 'Ukraine', to: 'Slovakia', value: 0.13, lat: 48.1, lon: 17.1 },
+      { from: 'Ukraine', to: 'Moldova', value: 0.11, lat: 47.0, lon: 28.9 },
+      { from: 'Ukraine', to: 'Ireland', value: 0.09, lat: 53.3, lon: -6.3 },
+      { from: 'Ukraine', to: 'Belgium', value: 0.08, lat: 50.8, lon: 4.3 },
+      { from: 'Ukraine', to: 'Portugal', value: 0.07, lat: 38.7, lon: -9.1 },
+      { from: 'Ukraine', to: 'Lithuania', value: 0.06, lat: 54.7, lon: 25.3 },
+      { from: 'Ukraine', to: 'Netherlands', value: 0.06, lat: 52.4, lon: 4.9 },
+
+      { from: 'Afghanistan', to: 'Iran', value: 3.40, lat: 35.7, lon: 51.4 },
+      { from: 'Afghanistan', to: 'Pakistan', value: 1.90, lat: 33.7, lon: 73.1 },
+      { from: 'Afghanistan', to: 'Türkiye', value: 0.30, lat: 39.9, lon: 32.8 },
+      { from: 'Afghanistan', to: 'Germany', value: 0.26, lat: 52.5, lon: 13.4 },
+      { from: 'Afghanistan', to: 'India', value: 0.18, lat: 28.6, lon: 77.2 },
+      { from: 'Afghanistan', to: 'Tajikistan', value: 0.14, lat: 38.6, lon: 68.8 },
+      { from: 'Afghanistan', to: 'UAE', value: 0.12, lat: 24.5, lon: 54.4 },
+      { from: 'Afghanistan', to: 'Austria', value: 0.10, lat: 48.2, lon: 16.4 },
+      { from: 'Afghanistan', to: 'Greece', value: 0.09, lat: 37.9, lon: 23.7 },
+      { from: 'Afghanistan', to: 'Sweden', value: 0.08, lat: 59.3, lon: 18.1 },
+      { from: 'Afghanistan', to: 'France', value: 0.07, lat: 48.9, lon: 2.3 },
+      { from: 'Afghanistan', to: 'Netherlands', value: 0.06, lat: 52.4, lon: 4.9 },
+      { from: 'Afghanistan', to: 'Norway', value: 0.05, lat: 59.9, lon: 10.8 },
+      { from: 'Afghanistan', to: 'Switzerland', value: 0.05, lat: 46.9, lon: 7.4 },
+      { from: 'Afghanistan', to: 'Indonesia', value: 0.04, lat: -6.2, lon: 106.8 },
+
+      { from: 'Venezuela', to: 'Colombia', value: 2.90, lat: 4.7, lon: -74.1 },
+      { from: 'Venezuela', to: 'Peru', value: 1.50, lat: -12.0, lon: -77.0 },
+      { from: 'Venezuela', to: 'Ecuador', value: 0.47, lat: -0.2, lon: -78.5 },
+      { from: 'Venezuela', to: 'Chile', value: 0.44, lat: -33.4, lon: -70.6 },
+      { from: 'Venezuela', to: 'Brazil', value: 0.43, lat: -15.8, lon: -47.9 },
+      { from: 'Venezuela', to: 'Argentina', value: 0.26, lat: -34.6, lon: -58.4 },
+      { from: 'Venezuela', to: 'Panama', value: 0.19, lat: 8.98, lon: -79.5 },
+      { from: 'Venezuela', to: 'Dominican Rep.', value: 0.12, lat: 18.5, lon: -69.9 },
+      { from: 'Venezuela', to: 'Mexico', value: 0.10, lat: 19.4, lon: -99.1 },
+      { from: 'Venezuela', to: 'Uruguay', value: 0.07, lat: -34.9, lon: -56.2 },
+      { from: 'Venezuela', to: 'Costa Rica', value: 0.06, lat: 9.9, lon: -84.1 },
+      { from: 'Venezuela', to: 'Trinidad and Tobago', value: 0.05, lat: 10.7, lon: -61.5 },
+      { from: 'Venezuela', to: 'Paraguay', value: 0.05, lat: -25.3, lon: -57.6 },
+      { from: 'Venezuela', to: 'Guyana', value: 0.04, lat: 6.8, lon: -58.2 },
+      { from: 'Venezuela', to: 'Curacao', value: 0.03, lat: 12.1, lon: -68.9 },
+
+      { from: 'Syria', to: 'Türkiye', value: 3.20, lat: 39.9, lon: 32.8 },
+      { from: 'Syria', to: 'Lebanon', value: 0.79, lat: 33.9, lon: 35.5 },
+      { from: 'Syria', to: 'Jordan', value: 0.65, lat: 31.9, lon: 35.9 },
+      { from: 'Syria', to: 'Germany', value: 0.72, lat: 52.5, lon: 13.4 },
+      { from: 'Syria', to: 'Iraq', value: 0.30, lat: 33.3, lon: 44.4 },
+      { from: 'Syria', to: 'Egypt', value: 0.15, lat: 30.0, lon: 31.2 },
+      { from: 'Syria', to: 'Sweden', value: 0.12, lat: 59.3, lon: 18.1 },
+      { from: 'Syria', to: 'Austria', value: 0.09, lat: 48.2, lon: 16.4 },
+      { from: 'Syria', to: 'Netherlands', value: 0.08, lat: 52.4, lon: 4.9 },
+      { from: 'Syria', to: 'Denmark', value: 0.06, lat: 55.7, lon: 12.6 },
+      { from: 'Syria', to: 'Armenia', value: 0.06, lat: 40.2, lon: 44.5 },
+      { from: 'Syria', to: 'France', value: 0.05, lat: 48.9, lon: 2.3 },
+      { from: 'Syria', to: 'Belgium', value: 0.05, lat: 50.8, lon: 4.3 },
+      { from: 'Syria', to: 'Switzerland', value: 0.04, lat: 46.9, lon: 7.4 },
+      { from: 'Syria', to: 'Bulgaria', value: 0.04, lat: 42.7, lon: 23.3 },
+
+      { from: 'Sudan', to: 'Chad', value: 0.78, lat: 12.1, lon: 15.0 },
+      { from: 'Sudan', to: 'South Sudan', value: 0.63, lat: 4.9, lon: 31.6 },
+      { from: 'Sudan', to: 'Egypt', value: 0.56, lat: 30.0, lon: 31.2 },
+      { from: 'Sudan', to: 'Ethiopia', value: 0.41, lat: 9.0, lon: 38.8 },
+      { from: 'Sudan', to: 'Libya', value: 0.22, lat: 32.9, lon: 13.2 },
+      { from: 'Sudan', to: 'Uganda', value: 0.17, lat: 0.31, lon: 32.6 },
+      { from: 'Sudan', to: 'CAR', value: 0.14, lat: 4.4, lon: 18.6 },
+      { from: 'Sudan', to: 'Kenya', value: 0.12, lat: -1.3, lon: 36.8 },
+      { from: 'Sudan', to: 'Eritrea', value: 0.10, lat: 15.3, lon: 38.9 },
+      { from: 'Sudan', to: 'Saudi Arabia', value: 0.09, lat: 24.7, lon: 46.7 },
+      { from: 'Sudan', to: 'Djibouti', value: 0.08, lat: 11.6, lon: 43.1 },
+      { from: 'Sudan', to: 'Rwanda', value: 0.07, lat: -1.9, lon: 30.1 },
+      { from: 'Sudan', to: 'Yemen', value: 0.06, lat: 15.3, lon: 44.2 },
+      { from: 'Sudan', to: 'Niger', value: 0.05, lat: 13.5, lon: 2.1 },
+      { from: 'Sudan', to: 'DR Congo', value: 0.05, lat: -4.3, lon: 15.3 },
+    ];
+
+    const originByName = new Map(origins.map((o) => [o.name, o]));
+    const maxFlow = Math.max(...flows.map((f) => f.value));
+    const minFlow = Math.min(...flows.map((f) => f.value));
+
+    const PARTICLE_MIN = 8;
+    const PARTICLE_MAX = 90;
+    const PARTICLE_RADIUS = 1.2;
+
+    const svg = d3.select('#chart');
+    const { width, height } = svg.node().getBoundingClientRect();
+
+    const makeProjection = typeof d3.geoRobinson === 'function' ? d3.geoRobinson : d3.geoNaturalEarth1;
+    const projection = makeProjection().fitExtent([[14, 12], [width - 14, height - 12]], { type: 'Sphere' });
+    const path = d3.geoPath(projection);
+
+    const gMap = svg.append('g');
+    const gGuides = svg.append('g');
+    const gNodes = svg.append('g');
+    const gLabels = svg.append('g');
+    const gParticles = svg.append('g');
+
+    const particles = [];
+    let frameId = null;
+    let prevT = performance.now();
+
+    function flowToParticleCount(value) {
+      const norm = (value - minFlow) / (maxFlow - minFlow || 1);
+      return Math.round(PARTICLE_MIN + norm * (PARTICLE_MAX - PARTICLE_MIN));
+    }
+
+    function flowGroupMeta() {
+      const grouped = new Map();
+      flows.forEach((flow) => {
+        if (!grouped.has(flow.from)) grouped.set(flow.from, []);
+        grouped.get(flow.from).push(flow);
+      });
+
+      const meta = new Map();
+      grouped.forEach((group) => {
+        group.slice().sort((a, b) => b.value - a.value).forEach((flow, index) => {
+          meta.set(flow, { index, count: group.length });
+        });
+      });
+      return meta;
+    }
+
+    function buildCurvePoints(p0, p2, curveStrength, segments = 56) {
+      const mx = (p0[0] + p2[0]) / 2;
+      const my = (p0[1] + p2[1]) / 2;
+      const dx = p2[0] - p0[0];
+      const dy = p2[1] - p0[1];
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      const control = [mx + nx * len * curveStrength, my + ny * len * curveStrength];
+
+      const pts = [];
+      for (let i = 0; i <= segments; i += 1) {
+        const t = i / segments;
+        const x = (1 - t) * (1 - t) * p0[0] + 2 * (1 - t) * t * control[0] + t * t * p2[0];
+        const y = (1 - t) * (1 - t) * p0[1] + 2 * (1 - t) * t * control[1] + t * t * p2[1];
+        pts.push([x, y]);
+      }
+      return pts;
+    }
+
+    function sampleOffsetPoint(points, t, laneOffset) {
+      const scaled = t * (points.length - 1);
+      const i = Math.floor(scaled);
+      const local = scaled - i;
+      const p1 = points[i];
+      const p2 = points[Math.min(i + 1, points.length - 1)];
+      const baseX = p1[0] + (p2[0] - p1[0]) * local;
+      const baseY = p1[1] + (p2[1] - p1[1]) * local;
+
+      const tx = p2[0] - p1[0];
+      const ty = p2[1] - p1[1];
+      const len = Math.hypot(tx, ty) || 1;
+      const nx = -ty / len;
+      const ny = tx / len;
+
+      return [baseX + nx * laneOffset, baseY + ny * laneOffset];
+    }
+
+    function stopAnimation() {
+      if (frameId) cancelAnimationFrame(frameId);
+      frameId = null;
+      particles.length = 0;
+      gParticles.selectAll('*').remove();
+    }
+
+    function startAnimation() {
+      prevT = performance.now();
+
+      function tick(now) {
+        const dt = Math.min(40, now - prevT);
+        prevT = now;
+
+        const pulseT = now * 0.002;
+        for (const p of particles) {
+          p.phase = (p.phase + p.speed * dt) % 1;
+          const [x, y] = sampleOffsetPoint(p.route, p.phase, p.laneOffset);
+          const alpha = p.baseOpacity + Math.sin(pulseT + p.twinklePhase) * 0.14;
+          p.node
+            .attr('cx', x)
+            .attr('cy', y)
+            .attr('fill-opacity', Math.max(0.2, Math.min(0.92, alpha)));
+        }
+
+        frameId = requestAnimationFrame(tick);
+      }
+
+      frameId = requestAnimationFrame(tick);
+    }
+
+    function renderWorld(world) {
+      const countries = topojson.feature(world, world.objects.countries);
+      const land = topojson.merge(world, world.objects.countries.geometries);
+      const originCoords = origins.map((o) => [o.lon, o.lat]);
+
+      const defs = svg.append('defs');
+      const blur = defs.append('filter')
+        .attr('id', 'coastGlow')
+        .attr('x', '-50%')
+        .attr('y', '-50%')
+        .attr('width', '200%')
+        .attr('height', '200%');
+      blur.append('feGaussianBlur').attr('stdDeviation', 2.6);
+
+      gMap.append('path').datum({ type: 'Sphere' }).attr('d', path).attr('fill', 'rgba(4, 19, 41, 0.76)');
+      gMap.append('path').datum(land).attr('class', 'coastline-glow').attr('d', path);
+      gMap.append('path').datum(land).attr('class', 'coastline-edge').attr('d', path);
+      gMap.selectAll('.country')
+        .data(countries.features)
+        .join('path')
+        .attr('class', (feature) => {
+          const isOriginCountry = originCoords.some((coord) => d3.geoContains(feature, coord));
+          return isOriginCountry ? 'country origin-country' : 'country';
+        })
+        .attr('d', path);
+    }
+
+    function renderFlowsAndNodes() {
+      const meta = flowGroupMeta();
+
+      gGuides.selectAll('*').remove();
+      gNodes.selectAll('*').remove();
+      gLabels.selectAll('*').remove();
+      stopAnimation();
+
+      const seenDest = new Set();
+
+      flows.forEach((f) => {
+        const origin = originByName.get(f.from);
+        const start = projection([origin.lon, origin.lat]);
+        const end = projection([f.lon, f.lat]);
+        if (!start || !end) return;
+
+        const group = meta.get(f);
+        const center = (group.count - 1) / 2;
+        const fan = (group.index - center) / Math.max(center, 1);
+        const signedCurve = (0.10 + Math.abs(fan) * 0.2) * (fan >= 0 ? 1 : -1);
+
+        const route = buildCurvePoints(start, end, signedCurve, 56);
+        const linePath = d3.line().curve(d3.curveLinear)(route);
+
+        gGuides.append('path')
+          .attr('class', 'guide')
+          .attr('d', linePath)
+          .attr('stroke', origin.color);
+
+        const tail = route[route.length - 1];
+        const prev = route[route.length - 2];
+        const vx = tail[0] - prev[0];
+        const vy = tail[1] - prev[1];
+        const vlen = Math.hypot(vx, vy) || 1;
+        const ux = vx / vlen;
+        const uy = vy / vlen;
+        const px = -uy;
+        const py = ux;
+        const arrowSize = 5.8;
+
+        gGuides.append('path')
+          .attr('class', 'arrow')
+          .attr('stroke', origin.color)
+          .attr('d', `M ${tail[0] - ux * 0.5} ${tail[1] - uy * 0.5} L ${tail[0] - ux * arrowSize + px * arrowSize * 0.45} ${tail[1] - uy * arrowSize + py * arrowSize * 0.45} M ${tail[0] - ux * 0.5} ${tail[1] - uy * 0.5} L ${tail[0] - ux * arrowSize - px * arrowSize * 0.45} ${tail[1] - uy * arrowSize - py * arrowSize * 0.45}`);
+
+        const particleCount = flowToParticleCount(f.value);
+        const laneSpread = 1.8 + Math.min(13, Math.sqrt(particleCount) * 0.9);
+        const baseSpeed = 0.00032 + (f.value / maxFlow) * 0.00042;
+
+        for (let i = 0; i < particleCount; i += 1) {
+          const laneOffset = (Math.random() * 2 - 1) * laneSpread;
+          const phase = Math.random();
+          const speed = baseSpeed * (0.75 + Math.random() * 0.75);
+          const [x, y] = sampleOffsetPoint(route, phase, laneOffset);
+          const baseOpacity = 0.62 + Math.random() * 0.18;
+          const twinklePhase = Math.random() * Math.PI * 2;
+
+          const node = gParticles.append('circle')
+            .attr('class', 'particle')
+            .attr('cx', x)
+            .attr('cy', y)
+            .attr('r', PARTICLE_RADIUS)
+            .attr('fill', origin.color)
+            .attr('fill-opacity', baseOpacity);
+
+          particles.push({ node, route, phase, laneOffset, speed, baseOpacity, twinklePhase });
+        }
+
+        if (!seenDest.has(f.to)) {
+          seenDest.add(f.to);
+          gNodes.append('circle').attr('class', 'dest-node').attr('cx', end[0]).attr('cy', end[1]).attr('r', 1.9);
+        }
+      });
+
+      origins.forEach((o) => {
+        const p = projection([o.lon, o.lat]);
+        if (!p) return;
+
+        gNodes.append('circle')
+          .attr('class', 'origin-node')
+          .attr('cx', p[0])
+          .attr('cy', p[1])
+          .attr('r', 4.8)
+          .attr('fill', '#ffffff');
+
+        gLabels.append('text')
+          .attr('class', 'origin-label')
+          .attr('x', p[0] + 7)
+          .attr('y', p[1] - 7)
+          .text(o.name);
+      });
+
+      startAnimation();
+    }
+
+    function showError(message) {
+      svg.append('text')
+        .attr('class', 'error')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
+        .text(message);
+    }
+
+    async function init() {
+      try {
+        const world = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+        if (!world || !world.objects || !world.objects.countries) {
+          throw new Error('World data unavailable');
+        }
+        renderWorld(world);
+        renderFlowsAndNodes();
+      } catch (error) {
+        console.error(error);
+        showError('Map data failed to load. Please refresh.');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
