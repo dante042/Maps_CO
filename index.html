@@ -10,6 +10,24 @@
       --bg-a: #020617;
       --bg-b: #0f172a;
       --ink: #e2e8f0;
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flujos globales de refugiados</title>
+  <style>
+    :root {
+      --bg1: #020d2f;
+      --bg2: #00143f;
+      --outline: #dff3ff;
+      --land: #143564;
+      --land-stroke: #c7e8ff;
+      --label: #f3f8ff;
+      --ukr: #66adff;
+      --afg: #f6ac2f;
+      --ven: #3de3b2;
+      --syr: #b99bff;
+      --sdn: #ff8c8c;
     }
 
     * { box-sizing: border-box; }
@@ -101,6 +119,68 @@
       font-size: 16px;
       font-weight: 600;
       text-anchor: middle;
+      background:
+        radial-gradient(circle at 20% 30%, #0a2d63 0%, transparent 35%),
+        radial-gradient(circle at 80% 80%, #0f2b57 0%, transparent 40%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      font-family: Inter, Segoe UI, Roboto, system-ui, -apple-system, sans-serif;
+    }
+
+    svg {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      filter: drop-shadow(0 0 18px rgba(174, 226, 255, 0.12));
+    }
+
+    .land {
+      fill: rgba(15, 46, 88, 0.86);
+      stroke: var(--land-stroke);
+      stroke-width: 1.25;
+      filter: drop-shadow(0 0 7px rgba(206, 236, 255, 0.45));
+    }
+
+    .origin-dot {
+      stroke: #fff;
+      stroke-width: 0.8;
+      filter: drop-shadow(0 0 4px currentColor);
+    }
+
+    .label {
+      fill: var(--label);
+      font-size: 14px;
+      font-weight: 700;
+      paint-order: stroke;
+      stroke: rgba(2, 9, 28, 0.8);
+      stroke-width: 3px;
+      stroke-linejoin: round;
+    }
+
+    .flow {
+      fill: none;
+      stroke-linecap: round;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 5px currentColor);
+      stroke-dasharray: 2 10;
+      animation: flowMove 5s linear infinite;
+    }
+
+    .flow.light { opacity: 0.55; }
+
+    @keyframes flowMove {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: -180; }
+    }
+
+    .spark {
+      fill: currentColor;
+      opacity: 0;
+      animation: pulse 4.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 20%, 100% { opacity: 0; transform: scale(0.6); }
+      35%, 60% { opacity: 0.95; transform: scale(1.2); }
     }
   </style>
 </head>
@@ -511,5 +591,79 @@
 
     init();
   </script>
+  <svg viewBox="0 0 1600 900" aria-label="Mapa mundial con flujos animados de refugiados">
+    <g aria-label="continentes">
+      <path class="land" d="M100 210 L210 120 L350 140 L420 260 L380 360 L220 400 L120 350 Z"/>
+      <path class="land" d="M360 370 L450 450 L470 550 L440 650 L355 800 L300 720 L310 560 Z"/>
+      <path class="land" d="M700 180 L860 150 L980 200 L1030 250 L1080 320 L990 410 L840 420 L750 300 Z"/>
+      <path class="land" d="M840 390 L930 430 L980 530 L940 640 L855 690 L770 600 L780 500 Z"/>
+      <path class="land" d="M1110 520 L1210 560 L1260 630 L1190 690 L1090 650 Z"/>
+      <path class="land" d="M1270 630 L1380 660 L1450 760 L1360 820 L1255 780 Z"/>
+      <path class="land" d="M980 200 L1130 210 L1230 170 L1390 210 L1500 260 L1450 340 L1300 350 L1180 300 Z"/>
+    </g>
+
+    <g aria-label="flujos ukrania" style="color: var(--ukr)">
+      <path class="flow" stroke="currentColor" stroke-width="5" d="M885 198 Q865 190 842 190"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2.5" d="M885 198 Q860 184 830 175"/>
+      <path class="flow" stroke="currentColor" stroke-width="8" d="M885 198 Q860 210 840 225"/>
+      <path class="flow" stroke="currentColor" stroke-width="6" d="M885 198 Q902 185 920 170"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M885 198 Q910 210 936 224"/>
+    </g>
+
+    <g aria-label="flujos afganistan" style="color: var(--afg)">
+      <path class="flow" stroke="currentColor" stroke-width="8" d="M1085 244 Q1055 248 1024 242"/>
+      <path class="flow" stroke="currentColor" stroke-width="6" d="M1085 244 Q1112 241 1137 247"/>
+      <path class="flow light" stroke="currentColor" stroke-width="3" d="M1085 244 Q1015 230 942 220"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M1085 244 Q1180 285 1275 360"/>
+    </g>
+
+    <g aria-label="flujos venezuela" style="color: var(--ven)">
+      <path class="flow" stroke="currentColor" stroke-width="8" d="M445 390 Q432 390 423 403"/>
+      <path class="flow" stroke="currentColor" stroke-width="6" d="M445 390 Q430 408 412 430"/>
+      <path class="flow" stroke="currentColor" stroke-width="4" d="M445 390 Q435 452 420 508"/>
+      <path class="flow" stroke="currentColor" stroke-width="3" d="M445 390 Q460 520 430 610"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M445 390 Q405 470 370 530"/>
+    </g>
+
+    <g aria-label="flujos siria" style="color: var(--syr)">
+      <path class="flow" stroke="currentColor" stroke-width="7" d="M885 220 Q860 220 840 222"/>
+      <path class="flow" stroke="currentColor" stroke-width="6" d="M885 220 Q870 203 854 190"/>
+      <path class="flow light" stroke="currentColor" stroke-width="4" d="M885 220 Q905 220 930 220"/>
+      <path class="flow light" stroke="currentColor" stroke-width="3" d="M885 220 Q865 240 842 260"/>
+    </g>
+
+    <g aria-label="flujos sudan" style="color: var(--sdn)">
+      <path class="flow" stroke="currentColor" stroke-width="7" d="M875 390 Q892 396 910 402"/>
+      <path class="flow" stroke="currentColor" stroke-width="5" d="M875 390 Q850 388 830 380"/>
+      <path class="flow light" stroke="currentColor" stroke-width="3" d="M875 390 Q875 350 870 315"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M875 390 Q848 366 820 350"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M875 390 Q900 370 930 346"/>
+    </g>
+
+    <g aria-label="origenes y etiquetas">
+      <circle class="origin-dot" cx="885" cy="198" r="6" fill="var(--ukr)"/>
+      <text class="label" x="900" y="194">Ukrania</text>
+
+      <circle class="origin-dot" cx="1085" cy="244" r="6" fill="var(--afg)"/>
+      <text class="label" x="1099" y="240">Afghanistan</text>
+
+      <circle class="origin-dot" cx="445" cy="390" r="6" fill="var(--ven)"/>
+      <text class="label" x="460" y="387">Venezuela</text>
+
+      <circle class="origin-dot" cx="885" cy="220" r="6" fill="var(--syr)"/>
+      <text class="label" x="900" y="222">Syria</text>
+
+      <circle class="origin-dot" cx="875" cy="390" r="6" fill="var(--sdn)"/>
+      <text class="label" x="890" y="385">Sudan</text>
+    </g>
+
+    <g aria-hidden="true" style="color: #ffffff">
+      <circle class="spark" cx="842" cy="190" r="2" style="animation-delay: .3s"/>
+      <circle class="spark" cx="1024" cy="242" r="2" style="animation-delay: 1.2s"/>
+      <circle class="spark" cx="423" cy="403" r="2" style="animation-delay: .8s"/>
+      <circle class="spark" cx="840" cy="222" r="2" style="animation-delay: 1.7s"/>
+      <circle class="spark" cx="910" cy="402" r="2" style="animation-delay: 2.1s"/>
+    </g>
+  </svg>
 </body>
 </html>
