@@ -88,8 +88,8 @@ async function renderDetailed(){
   const d3=window.d3,topojson=window.topojson;
   const data=await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
   const projection=(typeof d3.geoRobinson==='function'?d3.geoRobinson():d3.geoNaturalEarth1()).fitExtent([[40,30],[W-40,H-30]],{type:'Sphere'});
-  projection.scale(projection.scale()*1.22); // zoom in requested
-  projection.translate([W*0.535,H*0.525]); // crop similar to reference framing
+  projection.scale(projection.scale()*1.38); // stronger zoom in to match requested framing
+  projection.translate([W*0.57,H*0.54]); // shift/crop toward Europe-MENA focus like reference
   projectionFn=(lon,lat)=>projection([lon,lat]);
   const path=d3.geoPath(projection),countries=topojson.feature(data,data.objects.countries).features,land=topojson.merge(data,data.objects.countries.geometries);
   worldLayer.innerHTML='';
