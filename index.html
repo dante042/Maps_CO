@@ -3,128 +3,667 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Refugee flows</title>
+  <title>Global Refugee Flow Density (Robinson)</title>
+
   <style>
-    :root{--bg1:#00112f;--bg2:#020a1d;--coast:#d9f0ff;--ukr:#67a8ff;--afg:#ffb22f;--ven:#40ddb0;--syr:#ad95ff;--sdn:#ff8d91}
-    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:radial-gradient(1000px 700px at 18% 20%,#12386f55 0%,transparent 50%),radial-gradient(1000px 700px at 82% 75%,#15457a55 0%,transparent 50%),linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,Segoe UI,Roboto,sans-serif}
-    svg{width:100vw;height:100vh;display:block}
-    .country{fill:#0a2550;stroke:rgba(220,239,255,.65);stroke-width:.75}
-    .origin-country{fill:rgba(255,255,255,.95);stroke:rgba(255,255,255,.95);stroke-width:.95}
-    .coast-glow{fill:none;stroke:rgba(220,239,255,.55);stroke-width:6;filter:url(#coastGlow)}
-    .coast-edge{fill:none;stroke:rgba(236,245,255,.9);stroke-width:1.2}
-    .flow-guide{fill:none;opacity:.28;stroke-linecap:round}
-    .origin{fill:#fff;stroke-width:1.2}
-    .dest{fill:#d9e9ff;stroke:#f3f8ff;stroke-width:.7}
-    .label{fill:#fff;font-size:15px;font-weight:700;paint-order:stroke;stroke:rgba(2,8,28,.88);stroke-width:4px;stroke-linejoin:round}
-    .particle{filter:drop-shadow(0 0 3px currentColor)}
+    :root {
+      --bg-a: #020617;
+      --bg-b: #0f172a;
+      --ink: #e2e8f0;
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flujos globales de refugiados</title>
+  <style>
+    :root {
+      --bg1: #020d2f;
+      --bg2: #00143f;
+      --outline: #dff3ff;
+      --land: #143564;
+      --land-stroke: #c7e8ff;
+      --label: #f3f8ff;
+      --ukr: #66adff;
+      --afg: #f6ac2f;
+      --ven: #3de3b2;
+      --syr: #b99bff;
+      --sdn: #ff8c8c;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(1000px 650px at 10% 15%, rgba(59, 130, 246, .22) 0%, transparent 45%),
+        radial-gradient(1000px 650px at 85% 85%, rgba(14, 165, 233, .2) 0%, transparent 48%),
+        linear-gradient(145deg, var(--bg-a), var(--bg-b));
+    }
+
+    #chart {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: radial-gradient(120% 100% at 50% 45%, #0b1a30 0%, #060f1f 68%, #050914 100%);
+    }
+
+    .origin-label {
+      fill: #f8fafc;
+      font-size: 11px;
+      font-weight: 700;
+      paint-order: stroke;
+      stroke: rgba(2, 6, 23, 0.92);
+      stroke-width: 3px;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    .country {
+      fill: rgba(8, 28, 58, 0.68);
+      stroke: rgba(255, 255, 255, 0.85);
+      stroke-width: 0.75;
+    }
+
+    .origin-country {
+      fill: rgba(255, 255, 255, 0.92);
+      stroke: rgba(255, 255, 255, 0.98);
+      stroke-width: 1;
+    }
+
+    .coastline-glow {
+      fill: none;
+      stroke: rgba(191, 239, 255, 0.55);
+      stroke-width: 8;
+      filter: url(#coastGlow);
+      pointer-events: none;
+    }
+
+    .coastline-edge {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.82);
+      stroke-width: 1.25;
+      pointer-events: none;
+    }
+
+    .guide {
+      fill: none;
+      stroke-linecap: round;
+      opacity: 0.23;
+      stroke-width: 1.1;
+    }
+
+    .arrow {
+      stroke-width: 1.2;
+      fill: none;
+      opacity: 0.9;
+    }
+
+    .origin-node {
+      stroke: #e2e8f0;
+      stroke-width: 1;
+    }
+
+    .dest-node {
+      fill: #cbd5e1;
+      stroke: #e2e8f0;
+      stroke-width: 1;
+    }
+
+    .error {
+      fill: #fecaca;
+      font-size: 16px;
+      font-weight: 600;
+      text-anchor: middle;
+      background:
+        radial-gradient(circle at 20% 30%, #0a2d63 0%, transparent 35%),
+        radial-gradient(circle at 80% 80%, #0f2b57 0%, transparent 40%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      font-family: Inter, Segoe UI, Roboto, system-ui, -apple-system, sans-serif;
+    }
+
+    svg {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      filter: drop-shadow(0 0 18px rgba(174, 226, 255, 0.12));
+    }
+
+    .land {
+      fill: rgba(15, 46, 88, 0.86);
+      stroke: var(--land-stroke);
+      stroke-width: 1.25;
+      filter: drop-shadow(0 0 7px rgba(206, 236, 255, 0.45));
+    }
+
+    .origin-dot {
+      stroke: #fff;
+      stroke-width: 0.8;
+      filter: drop-shadow(0 0 4px currentColor);
+    }
+
+    .label {
+      fill: var(--label);
+      font-size: 14px;
+      font-weight: 700;
+      paint-order: stroke;
+      stroke: rgba(2, 9, 28, 0.8);
+      stroke-width: 3px;
+      stroke-linejoin: round;
+    }
+
+    .flow {
+      fill: none;
+      stroke-linecap: round;
+      opacity: 0.9;
+      filter: drop-shadow(0 0 5px currentColor);
+      stroke-dasharray: 2 10;
+      animation: flowMove 5s linear infinite;
+    }
+
+    .flow.light { opacity: 0.55; }
+
+    @keyframes flowMove {
+      from { stroke-dashoffset: 0; }
+      to { stroke-dashoffset: -180; }
+    }
+
+    .spark {
+      fill: currentColor;
+      opacity: 0;
+      animation: pulse 4.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 20%, 100% { opacity: 0; transform: scale(0.6); }
+      35%, 60% { opacity: 0.95; transform: scale(1.2); }
+    }
   </style>
 </head>
 <body>
-<svg id="map" viewBox="0 0 2000 1000" role="img" aria-label="Animated world refugee flows">
-  <defs><filter id="coastGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter></defs>
-  <g id="worldLayer"></g><g id="guides"></g><g id="nodes"></g><g id="labels"></g><g id="particles"></g>
-</svg>
-<script>
-const svgNS='http://www.w3.org/2000/svg',W=2000,H=1000;
-const colors=getComputedStyle(document.documentElement);
-const originMeta={UKR:{name:'Ukraine',lon:31.3,lat:49,color:colors.getPropertyValue('--ukr').trim()},AFG:{name:'Afghanistan',lon:67.7,lat:33.9,color:colors.getPropertyValue('--afg').trim()},VEN:{name:'Venezuela',lon:-66,lat:7,color:colors.getPropertyValue('--ven').trim()},SYR:{name:'Syria',lon:38.9,lat:34.8,color:colors.getPropertyValue('--syr').trim()},SDN:{name:'Sudan',lon:30.5,lat:15.6,color:colors.getPropertyValue('--sdn').trim()}};
+  <svg id="chart" role="img" aria-label="Robinson-projection world map with animated refugee-flow particles"></svg>
 
-const flowRows=[['VEN','COL',2810357],['VEN','PER',1132520],['VEN','CHL',661416],['VEN','BRA',653184],['VEN','ECU',438154],['VEN','ARG',170500],['VEN','ESP',156037],['VEN','DOM',99486],['VEN','MEX',90811],['VEN','PAN',56876],['VEN','URY',38270],['VEN','CRI',28626],['VEN','USA',28128],['VEN','GUY',23407],['VEN','BOL',18715],['UKR','DEU',1193063],['UKR','POL',995247],['UKR','CZE',378251],['UKR','GBR',262436],['UKR','ESP',237005],['UKR','CAN',232381],['UKR','ROU',186040],['UKR','ITA',173620],['UKR','SVK',143836],['UKR','MDA',132775],['UKR','NLD',123542],['UKR','IRL',112446],['UKR','BEL',89072],['UKR','AUT',84785],['UKR','NOR',79577],['SYR','TUR',2646142],['SYR','LBN',716312],['SYR','DEU',695428],['SYR','JOR',511177],['SYR','IRQ',301670],['SYR','EGY',130082],['SYR','AUT',101249],['SYR','NLD',66831],['SYR','FRA',46008],['SYR','BGR',32291],['SYR','SWE',23241],['SYR','CHE',20011],['SYR','GBR',18574],['SYR','BEL',18428],['SYR','GRC',18017],['SDN','TCD',1258904],['SDN','SSD',551284],['SDN','LBY',314770],['SDN','ETH',96167],['SDN','UGA',85179],['SDN','CAF',38855],['SDN','EGY',31366],['SDN','FRA',30871],['SDN','GBR',21003],['SDN','KEN',7063],['SDN','DEU',4889],['SDN','JOR',3186],['SDN','SWE',2142],['SDN','GRC',1662],['SDN','ITA',1419],['AFG','IRN',2485339],['AFG','PAK',1546743],['AFG','DEU',280341],['AFG','FRA',98625],['AFG','GBR',60658],['AFG','AUT',46232],['AFG','USA',46137],['AFG','GRC',28602],['AFG','CHE',26631],['AFG','SWE',23895],['AFG','ITA',16864],['AFG','BEL',11019],['AFG','TJK',9910],['AFG','TUR',9872],['AFG','NLD',8689]];
-const isoCoord={COL:[-74.1,4.7],PER:[-77,-12],CHL:[-70.6,-33.4],BRA:[-47.9,-15.8],ECU:[-78.5,-0.2],ARG:[-58.4,-34.6],ESP:[-3.7,40.4],DOM:[-69.9,18.5],MEX:[-99.1,19.4],PAN:[-79.5,8.98],URY:[-56.2,-34.9],CRI:[-84.1,9.9],USA:[-77.0,38.9],GUY:[-58.2,6.8],BOL:[-68.1,-16.5],DEU:[13.4,52.5],POL:[21.0,52.2],CZE:[14.4,50.1],GBR:[-0.1,51.5],CAN:[-75.7,45.4],ROU:[26.1,44.4],ITA:[12.5,41.9],SVK:[17.1,48.1],MDA:[28.9,47.0],NLD:[4.9,52.4],IRL:[-6.3,53.3],BEL:[4.3,50.8],AUT:[16.4,48.2],NOR:[10.8,59.9],TUR:[32.8,39.9],LBN:[35.5,33.9],JOR:[35.9,31.9],IRQ:[44.4,33.3],EGY:[31.2,30.0],FRA:[2.3,48.9],BGR:[23.3,42.7],SWE:[18.1,59.3],CHE:[7.4,46.9],GRC:[23.7,37.9],TCD:[15.0,12.1],SSD:[31.6,4.9],LBY:[13.2,32.9],ETH:[38.8,9.0],UGA:[32.6,0.31],CAF:[18.6,4.4],KEN:[36.8,-1.3],IRN:[51.4,35.7],PAK:[73.1,33.7],TJK:[68.8,38.6]};
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-geo-projection@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
 
-const worldLayer=document.getElementById('worldLayer'),guidesG=document.getElementById('guides'),nodesG=document.getElementById('nodes'),labelsG=document.getElementById('labels'),particlesG=document.getElementById('particles');
-let particles=[],raf=0,projectionFn=(lon,lat)=>[((lon+180)/360)*W,((90-lat)/180)*H];
+  <script>
+    const origins = [
+      { name: 'Ukraine', color: '#60a5fa', lat: 49.0, lon: 31.3 },
+      { name: 'Afghanistan', color: '#f59e0b', lat: 33.9, lon: 67.7 },
+      { name: 'Venezuela', color: '#34d399', lat: 7.0, lon: -66.0 },
+      { name: 'Syria', color: '#a78bfa', lat: 34.8, lon: 38.9 },
+      { name: 'Sudan', color: '#f87171', lat: 15.6, lon: 30.5 },
+    ];
 
-const maxRef=Math.max(...flowRows.map(r=>r[2]));
-const REFUGEES_PER_PARTICLE=10000;
-const particleCount=(v)=>Math.max(1,Math.round(v/REFUGEES_PER_PARTICLE));
-const lineWidth=(v)=>0.35+3.2*(v/maxRef);
-window.flowRows=flowRows;
+    const flows = [
+      { from: 'Ukraine', to: 'Russia', value: 1.20, lat: 55.7, lon: 37.6 },
+      { from: 'Ukraine', to: 'Germany', value: 1.10, lat: 52.5, lon: 13.4 },
+      { from: 'Ukraine', to: 'Poland', value: 0.95, lat: 52.2, lon: 21.0 },
+      { from: 'Ukraine', to: 'Czechia', value: 0.38, lat: 50.1, lon: 14.4 },
+      { from: 'Ukraine', to: 'United Kingdom', value: 0.25, lat: 51.5, lon: -0.1 },
+      { from: 'Ukraine', to: 'Spain', value: 0.19, lat: 40.4, lon: -3.7 },
+      { from: 'Ukraine', to: 'Italy', value: 0.18, lat: 41.9, lon: 12.5 },
+      { from: 'Ukraine', to: 'Romania', value: 0.16, lat: 44.4, lon: 26.1 },
+      { from: 'Ukraine', to: 'Slovakia', value: 0.13, lat: 48.1, lon: 17.1 },
+      { from: 'Ukraine', to: 'Moldova', value: 0.11, lat: 47.0, lon: 28.9 },
+      { from: 'Ukraine', to: 'Ireland', value: 0.09, lat: 53.3, lon: -6.3 },
+      { from: 'Ukraine', to: 'Belgium', value: 0.08, lat: 50.8, lon: 4.3 },
+      { from: 'Ukraine', to: 'Portugal', value: 0.07, lat: 38.7, lon: -9.1 },
+      { from: 'Ukraine', to: 'Lithuania', value: 0.06, lat: 54.7, lon: 25.3 },
+      { from: 'Ukraine', to: 'Netherlands', value: 0.06, lat: 52.4, lon: 4.9 },
 
-const top10ByOrigin = new Map(Object.keys(originMeta).map(k=>[k,new Set(
-  flowRows.filter(r=>r[0]===k).sort((a,b)=>b[2]-a[2]).slice(0,10).map(r=>r[1])
-)]));
+      { from: 'Afghanistan', to: 'Iran', value: 3.40, lat: 35.7, lon: 51.4 },
+      { from: 'Afghanistan', to: 'Pakistan', value: 1.90, lat: 33.7, lon: 73.1 },
+      { from: 'Afghanistan', to: 'Türkiye', value: 0.30, lat: 39.9, lon: 32.8 },
+      { from: 'Afghanistan', to: 'Germany', value: 0.26, lat: 52.5, lon: 13.4 },
+      { from: 'Afghanistan', to: 'India', value: 0.18, lat: 28.6, lon: 77.2 },
+      { from: 'Afghanistan', to: 'Tajikistan', value: 0.14, lat: 38.6, lon: 68.8 },
+      { from: 'Afghanistan', to: 'UAE', value: 0.12, lat: 24.5, lon: 54.4 },
+      { from: 'Afghanistan', to: 'Austria', value: 0.10, lat: 48.2, lon: 16.4 },
+      { from: 'Afghanistan', to: 'Greece', value: 0.09, lat: 37.9, lon: 23.7 },
+      { from: 'Afghanistan', to: 'Sweden', value: 0.08, lat: 59.3, lon: 18.1 },
+      { from: 'Afghanistan', to: 'France', value: 0.07, lat: 48.9, lon: 2.3 },
+      { from: 'Afghanistan', to: 'Netherlands', value: 0.06, lat: 52.4, lon: 4.9 },
+      { from: 'Afghanistan', to: 'Norway', value: 0.05, lat: 59.9, lon: 10.8 },
+      { from: 'Afghanistan', to: 'Switzerland', value: 0.05, lat: 46.9, lon: 7.4 },
+      { from: 'Afghanistan', to: 'Indonesia', value: 0.04, lat: -6.2, lon: 106.8 },
 
-function quadMeta(a,b,cv=0.16){const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1],nx=-dy*cv,ny=dx*cv;return{d:`M${a[0].toFixed(1)} ${a[1].toFixed(1)} Q${(mx+nx).toFixed(1)} ${(my+ny).toFixed(1)} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`,c:[mx+nx,my+ny]};}
-function pointOnQuad(p0,c,p1,t){const mt=1-t;return[mt*mt*p0[0]+2*mt*t*c[0]+t*t*p1[0],mt*mt*p0[1]+2*mt*t*c[1]+t*t*p1[1]];}
-function clearFlows(){guidesG.innerHTML='';nodesG.innerHTML='';labelsG.innerHTML='';particlesG.innerHTML='';particles=[];if(raf)cancelAnimationFrame(raf)}
-function animate(now){if(!animate.prev)animate.prev=now;const dt=Math.min(40,now-animate.prev);animate.prev=now;for(const p of particles){p.t=(p.t+p.speed*dt)%1;const[x,y]=pointOnQuad(p.p0,p.c,p.p1,p.t);p.el.setAttribute('cx',x.toFixed(2));p.el.setAttribute('cy',y.toFixed(2));p.el.setAttribute('opacity',(0.45+0.45*Math.sin((p.t*6.28)+now*0.002)).toFixed(2));}raf=requestAnimationFrame(animate)}
+      { from: 'Venezuela', to: 'Colombia', value: 2.90, lat: 4.7, lon: -74.1 },
+      { from: 'Venezuela', to: 'Peru', value: 1.50, lat: -12.0, lon: -77.0 },
+      { from: 'Venezuela', to: 'Ecuador', value: 0.47, lat: -0.2, lon: -78.5 },
+      { from: 'Venezuela', to: 'Chile', value: 0.44, lat: -33.4, lon: -70.6 },
+      { from: 'Venezuela', to: 'Brazil', value: 0.43, lat: -15.8, lon: -47.9 },
+      { from: 'Venezuela', to: 'Argentina', value: 0.26, lat: -34.6, lon: -58.4 },
+      { from: 'Venezuela', to: 'Panama', value: 0.19, lat: 8.98, lon: -79.5 },
+      { from: 'Venezuela', to: 'Dominican Rep.', value: 0.12, lat: 18.5, lon: -69.9 },
+      { from: 'Venezuela', to: 'Mexico', value: 0.10, lat: 19.4, lon: -99.1 },
+      { from: 'Venezuela', to: 'Uruguay', value: 0.07, lat: -34.9, lon: -56.2 },
+      { from: 'Venezuela', to: 'Costa Rica', value: 0.06, lat: 9.9, lon: -84.1 },
+      { from: 'Venezuela', to: 'Trinidad and Tobago', value: 0.05, lat: 10.7, lon: -61.5 },
+      { from: 'Venezuela', to: 'Paraguay', value: 0.05, lat: -25.3, lon: -57.6 },
+      { from: 'Venezuela', to: 'Guyana', value: 0.04, lat: 6.8, lon: -58.2 },
+      { from: 'Venezuela', to: 'Curacao', value: 0.03, lat: 12.1, lon: -68.9 },
 
-function urbanTargets(baseLon, baseLat, lanes, seed){
-  const out=[];
-  for(let i=0;i<lanes;i++){
-    const a=(i/Math.max(1,lanes))*Math.PI*2 + seed*0.7;
-    const r=0.18 + (i%3)*0.08;
-    out.push([baseLon + Math.cos(a)*r, baseLat + Math.sin(a)*r]);
-  }
-  return out;
-}
+      { from: 'Syria', to: 'Türkiye', value: 3.20, lat: 39.9, lon: 32.8 },
+      { from: 'Syria', to: 'Lebanon', value: 0.79, lat: 33.9, lon: 35.5 },
+      { from: 'Syria', to: 'Jordan', value: 0.65, lat: 31.9, lon: 35.9 },
+      { from: 'Syria', to: 'Germany', value: 0.72, lat: 52.5, lon: 13.4 },
+      { from: 'Syria', to: 'Iraq', value: 0.30, lat: 33.3, lon: 44.4 },
+      { from: 'Syria', to: 'Egypt', value: 0.15, lat: 30.0, lon: 31.2 },
+      { from: 'Syria', to: 'Sweden', value: 0.12, lat: 59.3, lon: 18.1 },
+      { from: 'Syria', to: 'Austria', value: 0.09, lat: 48.2, lon: 16.4 },
+      { from: 'Syria', to: 'Netherlands', value: 0.08, lat: 52.4, lon: 4.9 },
+      { from: 'Syria', to: 'Denmark', value: 0.06, lat: 55.7, lon: 12.6 },
+      { from: 'Syria', to: 'Armenia', value: 0.06, lat: 40.2, lon: 44.5 },
+      { from: 'Syria', to: 'France', value: 0.05, lat: 48.9, lon: 2.3 },
+      { from: 'Syria', to: 'Belgium', value: 0.05, lat: 50.8, lon: 4.3 },
+      { from: 'Syria', to: 'Switzerland', value: 0.04, lat: 46.9, lon: 7.4 },
+      { from: 'Syria', to: 'Bulgaria', value: 0.04, lat: 42.7, lon: 23.3 },
 
-function renderFlows(){
-  clearFlows();
-  Object.values(originMeta).forEach(o=>{const[x,y]=projectionFn(o.lon,o.lat);const n=document.createElementNS(svgNS,'circle');n.setAttribute('class','origin');n.setAttribute('cx',x);n.setAttribute('cy',y);n.setAttribute('r',4.8);n.setAttribute('stroke',o.color);nodesG.appendChild(n);const l=document.createElementNS(svgNS,'text');l.setAttribute('class','label');l.setAttribute('x',x+8);l.setAttribute('y',y-8);l.textContent=o.name;labelsG.appendChild(l)});
+      { from: 'Sudan', to: 'Chad', value: 0.78, lat: 12.1, lon: 15.0 },
+      { from: 'Sudan', to: 'South Sudan', value: 0.63, lat: 4.9, lon: 31.6 },
+      { from: 'Sudan', to: 'Egypt', value: 0.56, lat: 30.0, lon: 31.2 },
+      { from: 'Sudan', to: 'Ethiopia', value: 0.41, lat: 9.0, lon: 38.8 },
+      { from: 'Sudan', to: 'Libya', value: 0.22, lat: 32.9, lon: 13.2 },
+      { from: 'Sudan', to: 'Uganda', value: 0.17, lat: 0.31, lon: 32.6 },
+      { from: 'Sudan', to: 'CAR', value: 0.14, lat: 4.4, lon: 18.6 },
+      { from: 'Sudan', to: 'Kenya', value: 0.12, lat: -1.3, lon: 36.8 },
+      { from: 'Sudan', to: 'Eritrea', value: 0.10, lat: 15.3, lon: 38.9 },
+      { from: 'Sudan', to: 'Saudi Arabia', value: 0.09, lat: 24.7, lon: 46.7 },
+      { from: 'Sudan', to: 'Djibouti', value: 0.08, lat: 11.6, lon: 43.1 },
+      { from: 'Sudan', to: 'Rwanda', value: 0.07, lat: -1.9, lon: 30.1 },
+      { from: 'Sudan', to: 'Yemen', value: 0.06, lat: 15.3, lon: 44.2 },
+      { from: 'Sudan', to: 'Niger', value: 0.05, lat: 13.5, lon: 2.1 },
+      { from: 'Sudan', to: 'DR Congo', value: 0.05, lat: -4.3, lon: 15.3 },
+    ];
 
-  flowRows.forEach((r,idx)=>{
-    const[oISO,dISO,val]=r,base=isoCoord[dISO],o=originMeta[oISO]; if(!o||!base) return;
-    const isTop10=top10ByOrigin.get(oISO).has(dISO);
-    const lanes=isTop10?Math.max(3,Math.min(14,Math.round((val/maxRef)*12)+3)):1;
-    const targets=urbanTargets(base[0],base[1],lanes,idx+1);
+    const originByName = new Map(origins.map((o) => [o.name, o]));
+    const maxFlow = Math.max(...flows.map((f) => f.value));
+    const minFlow = Math.min(...flows.map((f) => f.value));
 
-    targets.forEach((target,li)=>{
-      const laneVal=val/lanes;
-      const s=projectionFn(o.lon,o.lat),e=projectionFn(target[0],target[1]);
-      const {d:path,c}=quadMeta(s,e,0.08+((idx+li)%6)*0.025);
-      const g=document.createElementNS(svgNS,'path');g.setAttribute('class','flow-guide');g.setAttribute('d',path);g.setAttribute('stroke',o.color);g.setAttribute('stroke-width',lineWidth(laneVal).toFixed(2));guidesG.appendChild(g);
-      const dn=document.createElementNS(svgNS,'circle');dn.setAttribute('class','dest');dn.setAttribute('cx',e[0]);dn.setAttribute('cy',e[1]);dn.setAttribute('r',Math.max(1.2,lineWidth(laneVal)*0.8));nodesG.appendChild(dn);
-      const count=particleCount(laneVal);
-      for(let i=0;i<count;i++){const p=document.createElementNS(svgNS,'circle');p.setAttribute('class','particle');p.setAttribute('r',1.15);p.setAttribute('fill',o.color);particlesG.appendChild(p);particles.push({el:p,p0:s,c,p1:e,t:Math.random(),speed:(0.00018+(laneVal/maxRef)*0.00042)*(0.7+Math.random()*0.8)});}
-    });
-  });
+    const PARTICLE_MIN = 8;
+    const PARTICLE_MAX = 90;
+    const PARTICLE_RADIUS = 1.2;
 
-  raf=requestAnimationFrame(animate);
-}
+    const svg = d3.select('#chart');
+    let worldData = null;
 
-async function renderDetailed(){
-  const d3=window.d3,topojson=window.topojson;
-  const data=await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-  const projection=(typeof d3.geoRobinson==='function'?d3.geoRobinson():d3.geoNaturalEarth1());
+    const makeProjection = typeof d3.geoRobinson === 'function' ? d3.geoRobinson : d3.geoNaturalEarth1;
+    let width = 0;
+    let height = 0;
+    let projection;
+    let path;
 
-  // Requested framing:
-  // - West starts around Mexico City (~ -99 lon)
-  // - North around UK upper edge
-  // - South around mid-Argentina with extra margin so southern flows are not cut
-  const viewBounds={west:-100,east:165,north:62,south:-52};
-  const bboxFeature={
-    type:'Feature',
-    geometry:{
-      type:'Polygon',
-      coordinates:[[[viewBounds.west,viewBounds.south],[viewBounds.east,viewBounds.south],[viewBounds.east,viewBounds.north],[viewBounds.west,viewBounds.north],[viewBounds.west,viewBounds.south]]]
+    function updateProjection() {
+      const bounds = svg.node().getBoundingClientRect();
+      width = bounds.width;
+      height = bounds.height;
+      projection = makeProjection().fitExtent([[14, 12], [width - 14, height - 12]], { type: 'Sphere' });
+      path = d3.geoPath(projection);
     }
-  };
 
-  projection.fitExtent([[30,24],[W-30,H-24]],bboxFeature);
-  projectionFn=(lon,lat)=>projection([lon,lat]);
-  const path=d3.geoPath(projection),countries=topojson.feature(data,data.objects.countries).features,land=topojson.merge(data,data.objects.countries.geometries);
-  worldLayer.innerHTML='';
-  const glow=document.createElementNS(svgNS,'path');glow.setAttribute('class','coast-glow');glow.setAttribute('d',path(land));worldLayer.appendChild(glow);
-  const edge=document.createElementNS(svgNS,'path');edge.setAttribute('class','coast-edge');edge.setAttribute('d',path(land));worldLayer.appendChild(edge);
+    updateProjection();
 
-  for(const f of countries){
-    const p=document.createElementNS(svgNS,'path');
-    const isOrigin = Object.values(originMeta).some(o=>d3.geoContains(f,[o.lon,o.lat]));
-    p.setAttribute('class', isOrigin ? 'country origin-country' : 'country'); // origin countries white
-    p.setAttribute('d',path(f));
-    worldLayer.appendChild(p);
-  }
-  renderFlows();
-}
+    const gMap = svg.append('g');
+    const gGuides = svg.append('g');
+    const gNodes = svg.append('g');
+    const gLabels = svg.append('g');
+    const gParticles = svg.append('g');
 
-(function init(){
-  const libs=['https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js','https://cdn.jsdelivr.net/npm/d3-geo-projection@4/dist/d3-geo-projection.min.js','https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js'];
-  let loaded=0; const done=()=>{loaded++; if(loaded===libs.length&&window.d3&&window.topojson) renderDetailed().catch(()=>renderFlows())};
-  libs.forEach(src=>{const s=document.createElement('script');s.src=src;s.async=true;s.onload=done;s.onerror=done;document.head.appendChild(s)});
-  setTimeout(()=>{if(!window.d3||!window.topojson) renderFlows();},2500);
-})();
-</script>
+    const particles = [];
+    let frameId = null;
+    let prevT = performance.now();
+
+    function flowToParticleCount(value) {
+      const norm = (value - minFlow) / (maxFlow - minFlow || 1);
+      return Math.round(PARTICLE_MIN + norm * (PARTICLE_MAX - PARTICLE_MIN));
+    }
+
+    function flowGroupMeta() {
+      const grouped = new Map();
+      flows.forEach((flow) => {
+        if (!grouped.has(flow.from)) grouped.set(flow.from, []);
+        grouped.get(flow.from).push(flow);
+      });
+
+      const meta = new Map();
+      grouped.forEach((group) => {
+        group.slice().sort((a, b) => b.value - a.value).forEach((flow, index) => {
+          meta.set(flow, { index, count: group.length });
+        });
+      });
+      return meta;
+    }
+
+    function buildCurvePoints(p0, p2, curveStrength, segments = 56) {
+      const mx = (p0[0] + p2[0]) / 2;
+      const my = (p0[1] + p2[1]) / 2;
+      const dx = p2[0] - p0[0];
+      const dy = p2[1] - p0[1];
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = -dy / len;
+      const ny = dx / len;
+      const control = [mx + nx * len * curveStrength, my + ny * len * curveStrength];
+
+      const pts = [];
+      for (let i = 0; i <= segments; i += 1) {
+        const t = i / segments;
+        const x = (1 - t) * (1 - t) * p0[0] + 2 * (1 - t) * t * control[0] + t * t * p2[0];
+        const y = (1 - t) * (1 - t) * p0[1] + 2 * (1 - t) * t * control[1] + t * t * p2[1];
+        pts.push([x, y]);
+      }
+      return pts;
+    }
+
+    function sampleOffsetPoint(points, t, laneOffset) {
+      const scaled = t * (points.length - 1);
+      const i = Math.floor(scaled);
+      const local = scaled - i;
+      const p1 = points[i];
+      const p2 = points[Math.min(i + 1, points.length - 1)];
+      const baseX = p1[0] + (p2[0] - p1[0]) * local;
+      const baseY = p1[1] + (p2[1] - p1[1]) * local;
+
+      const tx = p2[0] - p1[0];
+      const ty = p2[1] - p1[1];
+      const len = Math.hypot(tx, ty) || 1;
+      const nx = -ty / len;
+      const ny = tx / len;
+
+      return [baseX + nx * laneOffset, baseY + ny * laneOffset];
+    }
+
+    function stopAnimation() {
+      if (frameId) cancelAnimationFrame(frameId);
+      frameId = null;
+      particles.length = 0;
+      gParticles.selectAll('*').remove();
+    }
+
+    function startAnimation() {
+      prevT = performance.now();
+
+      function tick(now) {
+        const dt = Math.min(40, now - prevT);
+        prevT = now;
+
+        const pulseT = now * 0.002;
+        for (const p of particles) {
+          p.phase = (p.phase + p.speed * dt) % 1;
+          const [x, y] = sampleOffsetPoint(p.route, p.phase, p.laneOffset);
+          const alpha = p.baseOpacity + Math.sin(pulseT + p.twinklePhase) * 0.14;
+          p.node
+            .attr('cx', x)
+            .attr('cy', y)
+            .attr('fill-opacity', Math.max(0.2, Math.min(0.92, alpha)));
+        }
+
+        frameId = requestAnimationFrame(tick);
+      }
+
+      frameId = requestAnimationFrame(tick);
+    }
+
+    function renderWorld(world) {
+      const countries = topojson.feature(world, world.objects.countries);
+      const land = topojson.merge(world, world.objects.countries.geometries);
+      const originCoords = origins.map((o) => [o.lon, o.lat]);
+
+      const defs = svg.append('defs');
+      const blur = defs.append('filter')
+        .attr('id', 'coastGlow')
+        .attr('x', '-50%')
+        .attr('y', '-50%')
+        .attr('width', '200%')
+        .attr('height', '200%');
+      blur.append('feGaussianBlur').attr('stdDeviation', 2.6);
+
+      gMap.append('path').datum({ type: 'Sphere' }).attr('d', path).attr('fill', 'rgba(4, 19, 41, 0.76)');
+      gMap.append('path').datum(land).attr('class', 'coastline-glow').attr('d', path);
+      gMap.append('path').datum(land).attr('class', 'coastline-edge').attr('d', path);
+      gMap.selectAll('.country')
+        .data(countries.features)
+        .join('path')
+        .attr('class', (feature) => {
+          const isOriginCountry = originCoords.some((coord) => d3.geoContains(feature, coord));
+          return isOriginCountry ? 'country origin-country' : 'country';
+        })
+        .attr('d', path);
+    }
+
+    function renderFlowsAndNodes() {
+      const meta = flowGroupMeta();
+
+      gGuides.selectAll('*').remove();
+      gNodes.selectAll('*').remove();
+      gLabels.selectAll('*').remove();
+      stopAnimation();
+
+      const seenDest = new Set();
+
+      flows.forEach((f) => {
+        const origin = originByName.get(f.from);
+        const start = projection([origin.lon, origin.lat]);
+        const end = projection([f.lon, f.lat]);
+        if (!start || !end) return;
+
+        const group = meta.get(f);
+        const center = (group.count - 1) / 2;
+        const fan = (group.index - center) / Math.max(center, 1);
+        const signedCurve = (0.10 + Math.abs(fan) * 0.2) * (fan >= 0 ? 1 : -1);
+
+        const route = buildCurvePoints(start, end, signedCurve, 56);
+        const linePath = d3.line().curve(d3.curveLinear)(route);
+
+        gGuides.append('path')
+          .attr('class', 'guide')
+          .attr('d', linePath)
+          .attr('stroke', origin.color);
+
+        const tail = route[route.length - 1];
+        const prev = route[route.length - 2];
+        const vx = tail[0] - prev[0];
+        const vy = tail[1] - prev[1];
+        const vlen = Math.hypot(vx, vy) || 1;
+        const ux = vx / vlen;
+        const uy = vy / vlen;
+        const px = -uy;
+        const py = ux;
+        const arrowSize = 5.8;
+
+        gGuides.append('path')
+          .attr('class', 'arrow')
+          .attr('stroke', origin.color)
+          .attr('d', `M ${tail[0] - ux * 0.5} ${tail[1] - uy * 0.5} L ${tail[0] - ux * arrowSize + px * arrowSize * 0.45} ${tail[1] - uy * arrowSize + py * arrowSize * 0.45} M ${tail[0] - ux * 0.5} ${tail[1] - uy * 0.5} L ${tail[0] - ux * arrowSize - px * arrowSize * 0.45} ${tail[1] - uy * arrowSize - py * arrowSize * 0.45}`);
+
+        const particleCount = flowToParticleCount(f.value);
+        const laneSpread = 1.8 + Math.min(13, Math.sqrt(particleCount) * 0.9);
+        const baseSpeed = 0.00032 + (f.value / maxFlow) * 0.00042;
+
+        for (let i = 0; i < particleCount; i += 1) {
+          const laneOffset = (Math.random() * 2 - 1) * laneSpread;
+          const phase = Math.random();
+          const speed = baseSpeed * (0.75 + Math.random() * 0.75);
+          const [x, y] = sampleOffsetPoint(route, phase, laneOffset);
+          const baseOpacity = 0.62 + Math.random() * 0.18;
+          const twinklePhase = Math.random() * Math.PI * 2;
+
+          const node = gParticles.append('circle')
+            .attr('class', 'particle')
+            .attr('cx', x)
+            .attr('cy', y)
+            .attr('r', PARTICLE_RADIUS)
+            .attr('fill', origin.color)
+            .attr('fill-opacity', baseOpacity);
+
+          particles.push({ node, route, phase, laneOffset, speed, baseOpacity, twinklePhase });
+        }
+
+        if (!seenDest.has(f.to)) {
+          seenDest.add(f.to);
+          gNodes.append('circle').attr('class', 'dest-node').attr('cx', end[0]).attr('cy', end[1]).attr('r', 1.9);
+        }
+      });
+
+      origins.forEach((o) => {
+        const p = projection([o.lon, o.lat]);
+        if (!p) return;
+
+        gNodes.append('circle')
+          .attr('class', 'origin-node')
+          .attr('cx', p[0])
+          .attr('cy', p[1])
+          .attr('r', 4.8)
+          .attr('fill', '#ffffff');
+
+        gLabels.append('text')
+          .attr('class', 'origin-label')
+          .attr('x', p[0] + 7)
+          .attr('y', p[1] - 7)
+          .text(o.name);
+      });
+
+      startAnimation();
+    }
+
+    function showError(message) {
+      svg.append('text')
+        .attr('class', 'error')
+        .attr('x', width / 2)
+        .attr('y', height / 2)
+        .text(message);
+    }
+
+    async function loadWorldData() {
+      const sources = [
+        'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json',
+        'https://unpkg.com/world-atlas@2/countries-110m.json',
+      ];
+
+      for (const source of sources) {
+        try {
+          const world = await d3.json(source);
+          if (world?.objects?.countries) return world;
+        } catch (error) {
+          console.warn('Failed loading map source:', source, error);
+        }
+      }
+
+      throw new Error('World data unavailable');
+    }
+
+    function rerender() {
+      if (!worldData) return;
+      updateProjection();
+      gMap.selectAll('*').remove();
+      gGuides.selectAll('*').remove();
+      gNodes.selectAll('*').remove();
+      gLabels.selectAll('*').remove();
+      stopAnimation();
+      renderWorld(worldData);
+      renderFlowsAndNodes();
+    }
+
+    const debouncedResize = (() => {
+      let timer = null;
+      return () => {
+        clearTimeout(timer);
+        timer = setTimeout(rerender, 180);
+      };
+    })();
+
+    window.addEventListener('resize', debouncedResize);
+
+    async function init() {
+      try {
+        worldData = await loadWorldData();
+        rerender();
+      } catch (error) {
+        console.error(error);
+        showError('Map data failed to load. Please refresh.');
+      }
+    }
+
+    init();
+  </script>
+  <svg viewBox="0 0 1600 900" aria-label="Mapa mundial con flujos animados de refugiados">
+    <g aria-label="continentes">
+      <path class="land" d="M100 210 L210 120 L350 140 L420 260 L380 360 L220 400 L120 350 Z"/>
+      <path class="land" d="M360 370 L450 450 L470 550 L440 650 L355 800 L300 720 L310 560 Z"/>
+      <path class="land" d="M700 180 L860 150 L980 200 L1030 250 L1080 320 L990 410 L840 420 L750 300 Z"/>
+      <path class="land" d="M840 390 L930 430 L980 530 L940 640 L855 690 L770 600 L780 500 Z"/>
+      <path class="land" d="M1110 520 L1210 560 L1260 630 L1190 690 L1090 650 Z"/>
+      <path class="land" d="M1270 630 L1380 660 L1450 760 L1360 820 L1255 780 Z"/>
+      <path class="land" d="M980 200 L1130 210 L1230 170 L1390 210 L1500 260 L1450 340 L1300 350 L1180 300 Z"/>
+    </g>
+
+    <g aria-label="flujos ukrania" style="color: var(--ukr)">
+      <path class="flow" stroke="currentColor" stroke-width="5" d="M885 198 Q865 190 842 190"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2.5" d="M885 198 Q860 184 830 175"/>
+      <path class="flow" stroke="currentColor" stroke-width="8" d="M885 198 Q860 210 840 225"/>
+      <path class="flow" stroke="currentColor" stroke-width="6" d="M885 198 Q902 185 920 170"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M885 198 Q910 210 936 224"/>
+    </g>
+
+    <g aria-label="flujos afganistan" style="color: var(--afg)">
+      <path class="flow" stroke="currentColor" stroke-width="8" d="M1085 244 Q1055 248 1024 242"/>
+      <path class="flow" stroke="currentColor" stroke-width="6" d="M1085 244 Q1112 241 1137 247"/>
+      <path class="flow light" stroke="currentColor" stroke-width="3" d="M1085 244 Q1015 230 942 220"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M1085 244 Q1180 285 1275 360"/>
+    </g>
+
+    <g aria-label="flujos venezuela" style="color: var(--ven)">
+      <path class="flow" stroke="currentColor" stroke-width="8" d="M445 390 Q432 390 423 403"/>
+      <path class="flow" stroke="currentColor" stroke-width="6" d="M445 390 Q430 408 412 430"/>
+      <path class="flow" stroke="currentColor" stroke-width="4" d="M445 390 Q435 452 420 508"/>
+      <path class="flow" stroke="currentColor" stroke-width="3" d="M445 390 Q460 520 430 610"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M445 390 Q405 470 370 530"/>
+    </g>
+
+    <g aria-label="flujos siria" style="color: var(--syr)">
+      <path class="flow" stroke="currentColor" stroke-width="7" d="M885 220 Q860 220 840 222"/>
+      <path class="flow" stroke="currentColor" stroke-width="6" d="M885 220 Q870 203 854 190"/>
+      <path class="flow light" stroke="currentColor" stroke-width="4" d="M885 220 Q905 220 930 220"/>
+      <path class="flow light" stroke="currentColor" stroke-width="3" d="M885 220 Q865 240 842 260"/>
+    </g>
+
+    <g aria-label="flujos sudan" style="color: var(--sdn)">
+      <path class="flow" stroke="currentColor" stroke-width="7" d="M875 390 Q892 396 910 402"/>
+      <path class="flow" stroke="currentColor" stroke-width="5" d="M875 390 Q850 388 830 380"/>
+      <path class="flow light" stroke="currentColor" stroke-width="3" d="M875 390 Q875 350 870 315"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M875 390 Q848 366 820 350"/>
+      <path class="flow light" stroke="currentColor" stroke-width="2" d="M875 390 Q900 370 930 346"/>
+    </g>
+
+    <g aria-label="origenes y etiquetas">
+      <circle class="origin-dot" cx="885" cy="198" r="6" fill="var(--ukr)"/>
+      <text class="label" x="900" y="194">Ukrania</text>
+
+      <circle class="origin-dot" cx="1085" cy="244" r="6" fill="var(--afg)"/>
+      <text class="label" x="1099" y="240">Afghanistan</text>
+
+      <circle class="origin-dot" cx="445" cy="390" r="6" fill="var(--ven)"/>
+      <text class="label" x="460" y="387">Venezuela</text>
+
+      <circle class="origin-dot" cx="885" cy="220" r="6" fill="var(--syr)"/>
+      <text class="label" x="900" y="222">Syria</text>
+
+      <circle class="origin-dot" cx="875" cy="390" r="6" fill="var(--sdn)"/>
+      <text class="label" x="890" y="385">Sudan</text>
+    </g>
+
+    <g aria-hidden="true" style="color: #ffffff">
+      <circle class="spark" cx="842" cy="190" r="2" style="animation-delay: .3s"/>
+      <circle class="spark" cx="1024" cy="242" r="2" style="animation-delay: 1.2s"/>
+      <circle class="spark" cx="423" cy="403" r="2" style="animation-delay: .8s"/>
+      <circle class="spark" cx="840" cy="222" r="2" style="animation-delay: 1.7s"/>
+      <circle class="spark" cx="910" cy="402" r="2" style="animation-delay: 2.1s"/>
+    </g>
+  </svg>
 </body>
 </html>
