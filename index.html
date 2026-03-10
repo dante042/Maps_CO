@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Refugee flows</title>
+  <style>
+    :root{--bg1:#00112f;--bg2:#020a1d;--coast:#d9f0ff;--land:#0a2550;--ukr:#67a8ff;--afg:#ffb22f;--ven:#40ddb0;--syr:#ad95ff;--sdn:#ff8d91}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:radial-gradient(1000px 700px at 18% 20%,#12386f55 0%,transparent 50%),radial-gradient(1000px 700px at 82% 75%,#15457a55 0%,transparent 50%),linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,Segoe UI,Roboto,sans-serif}
+    svg{width:100vw;height:100vh;display:block}
+    .country{fill:#0a2550;stroke:rgba(220,239,255,.65);stroke-width:.75}
+    .coast-glow{fill:none;stroke:rgba(220,239,255,.55);stroke-width:6;filter:url(#coastGlow)}
+    .coast-edge{fill:none;stroke:rgba(236,245,255,.9);stroke-width:1.2}
+    .flow-guide{fill:none;opacity:.32;stroke-linecap:round}
+    .origin{fill:#fff;stroke-width:1.2}
+    .dest{fill:#d9e9ff;stroke:#f3f8ff;stroke-width:.8}
+    .label{fill:#fff;font-size:15px;font-weight:700;paint-order:stroke;stroke:rgba(2,8,28,.88);stroke-width:4px;stroke-linejoin:round}
+    .particle{filter:drop-shadow(0 0 3px currentColor)}
+  </style>
+</head>
+<body>
+<svg id="map" viewBox="0 0 2000 1000" role="img" aria-label="Animated world refugee flows">
+  <defs><filter id="coastGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter></defs>
+  <g id="worldLayer"></g><g id="guides"></g><g id="nodes"></g><g id="labels"></g><g id="particles"></g>
+</svg>
+<script>
+const svgNS='http://www.w3.org/2000/svg',W=2000,H=1000;
+const colors=getComputedStyle(document.documentElement);
+const originMeta={UKR:{name:'Ukraine',lon:31.3,lat:49,color:colors.getPropertyValue('--ukr').trim()},AFG:{name:'Afghanistan',lon:67.7,lat:33.9,color:colors.getPropertyValue('--afg').trim()},VEN:{name:'Venezuela',lon:-66,lat:7,color:colors.getPropertyValue('--ven').trim()},SYR:{name:'Syria',lon:38.9,lat:34.8,color:colors.getPropertyValue('--syr').trim()},SDN:{name:'Sudan',lon:30.5,lat:15.6,color:colors.getPropertyValue('--sdn').trim()}};
+
+// Data sourced from the provided table (top destinations per origin with refugee totals)
+const flowRows=[
+['VEN','COL',2810357],['VEN','PER',1132520],['VEN','CHL',661416],['VEN','BRA',653184],['VEN','ECU',438154],['VEN','ARG',170500],['VEN','ESP',156037],['VEN','DOM',99486],['VEN','MEX',90811],['VEN','PAN',56876],['VEN','URY',38270],['VEN','CRI',28626],['VEN','USA',28128],['VEN','GUY',23407],['VEN','BOL',18715],
+['UKR','DEU',1193063],['UKR','POL',995247],['UKR','CZE',378251],['UKR','GBR',262436],['UKR','ESP',237005],['UKR','CAN',232381],['UKR','ROU',186040],['UKR','ITA',173620],['UKR','SVK',143836],['UKR','MDA',132775],['UKR','NLD',123542],['UKR','IRL',112446],['UKR','BEL',89072],['UKR','AUT',84785],['UKR','NOR',79577],
+['SYR','TUR',2646142],['SYR','LBN',716312],['SYR','DEU',695428],['SYR','JOR',511177],['SYR','IRQ',301670],['SYR','EGY',130082],['SYR','AUT',101249],['SYR','NLD',66831],['SYR','FRA',46008],['SYR','BGR',32291],['SYR','SWE',23241],['SYR','CHE',20011],['SYR','GBR',18574],['SYR','BEL',18428],['SYR','GRC',18017],
+['SDN','TCD',1258904],['SDN','SSD',551284],['SDN','LBY',314770],['SDN','ETH',96167],['SDN','UGA',85179],['SDN','CAF',38855],['SDN','EGY',31366],['SDN','FRA',30871],['SDN','GBR',21003],['SDN','KEN',7063],['SDN','DEU',4889],['SDN','JOR',3186],['SDN','SWE',2142],['SDN','GRC',1662],['SDN','ITA',1419],
+['AFG','IRN',2485339],['AFG','PAK',1546743],['AFG','DEU',280341],['AFG','FRA',98625],['AFG','GBR',60658],['AFG','AUT',46232],['AFG','USA',46137],['AFG','GRC',28602],['AFG','CHE',26631],['AFG','SWE',23895],['AFG','ITA',16864],['AFG','BEL',11019],['AFG','TJK',9910],['AFG','TUR',9872],['AFG','NLD',8689]
+];
+
+const isoCoord={COL:[-74.1,4.7],PER:[-77,-12],CHL:[-70.6,-33.4],BRA:[-47.9,-15.8],ECU:[-78.5,-0.2],ARG:[-58.4,-34.6],ESP:[-3.7,40.4],DOM:[-69.9,18.5],MEX:[-99.1,19.4],PAN:[-79.5,8.98],URY:[-56.2,-34.9],CRI:[-84.1,9.9],USA:[-77.0,38.9],GUY:[-58.2,6.8],BOL:[-68.1,-16.5],DEU:[13.4,52.5],POL:[21.0,52.2],CZE:[14.4,50.1],GBR:[-0.1,51.5],CAN:[-75.7,45.4],ROU:[26.1,44.4],ITA:[12.5,41.9],SVK:[17.1,48.1],MDA:[28.9,47.0],NLD:[4.9,52.4],IRL:[-6.3,53.3],BEL:[4.3,50.8],AUT:[16.4,48.2],NOR:[10.8,59.9],TUR:[32.8,39.9],LBN:[35.5,33.9],JOR:[35.9,31.9],IRQ:[44.4,33.3],EGY:[31.2,30.0],FRA:[2.3,48.9],BGR:[23.3,42.7],SWE:[18.1,59.3],CHE:[7.4,46.9],GRC:[23.7,37.9],TCD:[15.0,12.1],SSD:[31.6,4.9],LBY:[13.2,32.9],ETH:[38.8,9.0],UGA:[32.6,0.31],CAF:[18.6,4.4],KEN:[36.8,-1.3],IRN:[51.4,35.7],PAK:[73.1,33.7],TJK:[68.8,38.6]};
+
+const worldLayer=document.getElementById('worldLayer'),guidesG=document.getElementById('guides'),nodesG=document.getElementById('nodes'),labelsG=document.getElementById('labels'),particlesG=document.getElementById('particles');
+let particles=[],raf=0,project=(lon,lat)=>[((lon+180)/360)*W,((90-lat)/180)*H];
+const maxRef=Math.max(...flowRows.map(r=>r[2]));
+window.flowRows = flowRows;
+window.maxRef = maxRef;
+
+const REFUGEES_PER_PARTICLE = 10000;
+const particleCount=(v)=>Math.max(1,Math.round(v/REFUGEES_PER_PARTICLE)); // direct proportionality (10x refugees ~= 10x particles)
+const lineWidth=(v)=>0.35+3.2*(v/maxRef);
+
+function quadMeta(a,b,cv=0.16){const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2,dx=b[0]-a[0],dy=b[1]-a[1],nx=-dy*cv,ny=dx*cv;return{d:`M${a[0].toFixed(1)} ${a[1].toFixed(1)} Q${(mx+nx).toFixed(1)} ${(my+ny).toFixed(1)} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`,c:[mx+nx,my+ny]};}
+function pointOnQuad(p0,c,p1,t){const mt=1-t;return [mt*mt*p0[0]+2*mt*t*c[0]+t*t*p1[0],mt*mt*p0[1]+2*mt*t*c[1]+t*t*p1[1]];}
+function clearFlows(){guidesG.innerHTML='';nodesG.innerHTML='';labelsG.innerHTML='';particlesG.innerHTML='';particles=[];if(raf) cancelAnimationFrame(raf);}
+function animate(now){if(!animate.prev) animate.prev=now;const dt=Math.min(40,now-animate.prev);animate.prev=now;for(const p of particles){p.t=(p.t+p.speed*dt)%1;const [x,y]=pointOnQuad(p.p0,p.c,p.p1,p.t);p.el.setAttribute('cx',x.toFixed(2));p.el.setAttribute('cy',y.toFixed(2));p.el.setAttribute('opacity',(0.45+0.45*Math.sin((p.t*6.28)+now*0.002)).toFixed(2));}raf=requestAnimationFrame(animate);}
+
+function renderFlows(){
+  clearFlows();
+  Object.values(originMeta).forEach(o=>{const [x,y]=project(o.lon,o.lat);const n=document.createElementNS(svgNS,'circle');n.setAttribute('class','origin');n.setAttribute('cx',x);n.setAttribute('cy',y);n.setAttribute('r',4.8);n.setAttribute('stroke',o.color);nodesG.appendChild(n);const l=document.createElementNS(svgNS,'text');l.setAttribute('class','label');l.setAttribute('x',x+8);l.setAttribute('y',y-8);l.textContent=o.name;labelsG.appendChild(l);});
+  flowRows.forEach((r,idx)=>{const [oISO,dISO,val]=r;const d=isoCoord[dISO],o=originMeta[oISO];if(!d||!o)return;const s=project(o.lon,o.lat),e=project(d[0],d[1]);const {d:path,c}=quadMeta(s,e,0.08+(idx%5)*0.03);const g=document.createElementNS(svgNS,'path');g.setAttribute('class','flow-guide');g.setAttribute('d',path);g.setAttribute('stroke',o.color);g.setAttribute('stroke-width',lineWidth(val).toFixed(2));guidesG.appendChild(g);const dn=document.createElementNS(svgNS,'circle');dn.setAttribute('class','dest');dn.setAttribute('cx',e[0]);dn.setAttribute('cy',e[1]);dn.setAttribute('r',Math.max(1.6,lineWidth(val)));nodesG.appendChild(dn);const count=particleCount(val);for(let i=0;i<count;i++){const p=document.createElementNS(svgNS,'circle');p.setAttribute('class','particle');p.setAttribute('r',1.2);p.setAttribute('fill',o.color);particlesG.appendChild(p);particles.push({el:p,p0:s,c,p1:e,t:Math.random(),speed:(0.00018+(val/maxRef)*0.00042)*(0.7+Math.random()*0.8)});}});
+  raf=requestAnimationFrame(animate);
+}
+
+async function renderDetailed(){
+  const d3=window.d3,topojson=window.topojson;
+  const data=await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+  const projection=(typeof d3.geoRobinson==='function'?d3.geoRobinson():d3.geoNaturalEarth1()).fitExtent([[8,8],[W-8,H-8]],{type:'Sphere'});
+  project=(lon,lat)=>projection([lon,lat]);
+  const path=d3.geoPath(projection),countries=topojson.feature(data,data.objects.countries).features,land=topojson.merge(data,data.objects.countries.geometries);
+  worldLayer.innerHTML='';
+  const glow=document.createElementNS(svgNS,'path');glow.setAttribute('class','coast-glow');glow.setAttribute('d',path(land));worldLayer.appendChild(glow);
+  const edge=document.createElementNS(svgNS,'path');edge.setAttribute('class','coast-edge');edge.setAttribute('d',path(land));worldLayer.appendChild(edge);
+  for(const f of countries){const p=document.createElementNS(svgNS,'path');p.setAttribute('class','country');p.setAttribute('d',path(f));worldLayer.appendChild(p);} 
+  renderFlows();
+}
+
+(function init(){
+  const libs=['https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js','https://cdn.jsdelivr.net/npm/d3-geo-projection@4/dist/d3-geo-projection.min.js','https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js'];
+  let loaded=0;const done=()=>{loaded++; if(loaded===libs.length && window.d3 && window.topojson) renderDetailed().catch(()=>renderFlows());};
+  libs.forEach(src=>{const s=document.createElement('script');s.src=src;s.async=true;s.onload=done;s.onerror=done;document.head.appendChild(s);});
+  setTimeout(()=>{if(!window.d3||!window.topojson) renderFlows();},2500);
+})();
+</script>
+</body>
+</html>
