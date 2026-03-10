@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Refugee flows</title>
   <style>
-    :root{--bg1:#00112f;--bg2:#020a1d;--coast:#d9f0ff;--ukr:#67a8ff;--afg:#ffb22f;--ven:#40ddb0;--syr:#ad95ff;--sdn:#ff8d91}
-    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:radial-gradient(1000px 700px at 18% 20%,#12386f55 0%,transparent 50%),radial-gradient(1000px 700px at 82% 75%,#15457a55 0%,transparent 50%),linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,Segoe UI,Roboto,sans-serif}
+    :root{--sea:#ffffff;--coast:#0072BC;--ukr:#67a8ff;--afg:#ffb22f;--ven:#40ddb0;--syr:#ad95ff;--sdn:#ff8d91}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--sea);font-family:Inter,Segoe UI,Roboto,sans-serif}
     svg{width:100vw;height:100vh;display:block}
-    .country{fill:#0a2550;stroke:rgba(220,239,255,.65);stroke-width:.75}
+    .country{fill:#0a2550;stroke:rgba(0,114,188,.55);stroke-width:.75}
     .origin-country{fill:rgba(255,255,255,.95);stroke:rgba(255,255,255,.95);stroke-width:.95}
-    .coast-glow{fill:none;stroke:rgba(220,239,255,.55);stroke-width:6;filter:url(#coastGlow)}
-    .coast-edge{fill:none;stroke:rgba(236,245,255,.9);stroke-width:1.2}
+    .coast-glow{fill:none;stroke:rgba(0,114,188,.6);stroke-width:6;filter:url(#coastGlow)}
+    .coast-edge{fill:none;stroke:rgba(0,114,188,.95);stroke-width:1.2}
     .flow-guide{fill:none;opacity:.28;stroke-linecap:round}
     .origin{fill:#fff;stroke-width:1.2}
     .dest{fill:#d9e9ff;stroke:#f3f8ff;stroke-width:.7}
@@ -21,7 +21,7 @@
 </head>
 <body>
 <svg id="map" viewBox="0 0 2000 1000" role="img" aria-label="Animated world refugee flows">
-  <defs><filter id="coastGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.4"/></filter></defs>
+  <defs><filter id="coastGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.0"/></filter></defs>
   <g id="worldLayer"></g><g id="guides"></g><g id="nodes"></g><g id="labels"></g><g id="particles"></g>
 </svg>
 <script>
