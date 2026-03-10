@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Refugee flows</title>
   <style>
-    :root{--sea:#ffffff;--coast:#0072BC;--ukr:#67a8ff;--afg:#ffb22f;--ven:#40ddb0;--syr:#ad95ff;--sdn:#ff8d91}
+    :root{--sea:#ffffff;--coast:#0072BC;--ukr:#0a2550;--afg:#ffb22f;--ven:#40ddb0;--syr:#ad95ff;--sdn:#ff8d91}
     html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--sea);font-family:Inter,Segoe UI,Roboto,sans-serif}
     svg{width:100vw;height:100vh;display:block}
-    .country{fill:#0a2550;stroke:rgba(0,114,188,.55);stroke-width:.75}
+    .country{fill:#0072BC;stroke:rgba(0,114,188,.75);stroke-width:.75;filter:drop-shadow(0 2px 2px rgba(0,0,0,.16)) drop-shadow(0 -1px 1px rgba(255,255,255,.28))}
     .origin-country{fill:rgba(255,255,255,.95);stroke:rgba(255,255,255,.95);stroke-width:.95}
+    .country-relief{fill:none;stroke:rgba(255,255,255,.28);stroke-width:.45;stroke-linejoin:round;opacity:.75;mix-blend-mode:screen;pointer-events:none}
+
     .coast-glow{fill:none;stroke:rgba(0,114,188,.6);stroke-width:6;filter:url(#coastGlow)}
     .coast-edge{fill:none;stroke:rgba(0,114,188,.95);stroke-width:1.2}
     .flow-guide{fill:none;opacity:.28;stroke-linecap:round}
@@ -115,6 +117,12 @@ async function renderDetailed(){
     p.setAttribute('class', isOrigin ? 'country origin-country' : 'country'); // origin countries white
     p.setAttribute('d',path(f));
     worldLayer.appendChild(p);
+    if(!isOrigin){
+      const relief=document.createElementNS(svgNS,'path');
+      relief.setAttribute('class','country-relief');
+      relief.setAttribute('d',path(f));
+      worldLayer.appendChild(relief);
+    }
   }
   renderFlows();
 }
